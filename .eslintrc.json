@@ -28,7 +28,8 @@
       "@typescript-eslint/no-explicit-any": "error",
       "semi-style": ["error", "last"],
       "node/no-unsupported-features/es-syntax":"off",
-      "node/no-missing-import": "off"
+      "node/no-missing-import": "off",
+      "node/no-unpublished-import": "off"
       //["error", { "allowModules": ["types.d.ts"] }]
     },
     "ignorePatterns": [

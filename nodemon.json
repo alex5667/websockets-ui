@@ -1,0 +1,7 @@
+{
+    "ignore": ["*.test.ts"],
+    "watch": ["src"],
+    "execMap": {
+      "ts": "node --loader ts-node/esm"
+    }
+  }
