@@ -2,40 +2,38 @@ import { IncomingUser } from "../types/types.ts";
 import WebSocket from "ws";
 import { userDB } from "./userDB.ts";
 import { CommandGame } from "../types/types.ts";
+import { createErrorPayload, createSuccessPayload } from "../utils/utils.ts";
+import WebSocketEx from "../types/websocketEx.ts";
 
-export const registerUsers = (ws: WebSocket, data: IncomingUser) => {
+export const wsClients = new Set<WebSocketEx>();
+
+export const registerUsers = (ws: WebSocketEx, data: IncomingUser) => {
   const { name, password } = data;
-  console.log("name", name);
-  console.log("password", password);
+
   const res = {
     type: CommandGame.Reg,
     data: "",
     id: 0,
   };
-  const findUser = userDB.find((elem) => elem.name === name);
+  const findUser = userDB.find((user) => user.name === name);
 
   if (!name || !password) {
-    res.data = JSON.stringify({
-      ...data,
-      error: true,
-      errorText: "Error: Name or password is missing",
-    });
-  } else if (findUser && findUser.password !== password) {
-    res.data = JSON.stringify({
-      name: name,
-      index: findUser.index,
-      error: true,
-      errorText: "Error: Wrong password",
-    });
-  } else {
-    const newUser = addUser(name, password);
-    res.data = JSON.stringify({
-      name: name,
-      index: newUser.index,
-      error: false,
-      errorText: "",
-    });
-  }
+    res.data = createErrorPayload(data, "Name or password is missing");
+  } else  if (findUser && findUser.password !== password) {
+      res.data = createErrorPayload(data, "Wrong password");
+    } else  if(findUser && findUser.password === password){
+      res.data = createSuccessPayload(name, findUser.index);
+      ws.id = findUser.index;
+      wsClients.add(ws);
+    }    
+    else {
+      const newUser = addUser(name, password);
+      res.data = createSuccessPayload(name, newUser.index);
+      ws.id = newUser.index;
+      wsClients.add(ws);
+    }
+  
+
   ws.send(JSON.stringify(res));
   console.log("Send message to client: ", JSON.stringify(res));
 };
@@ -48,6 +46,6 @@ const addUser = (name: string, password: string, users = userDB) => {
   };
 
   users.push(newUser);
-  console.log("users" ,users);
+  console.log("users(users)", users);
   return newUser;
 };

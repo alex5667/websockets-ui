@@ -1,3 +1,6 @@
+import { IncomingUser } from "../types/types.ts";
+
+
 export const parseData = (data: string) => {
   try {
     const obj = JSON.parse(data);
@@ -8,4 +11,23 @@ export const parseData = (data: string) => {
   } catch (e) {
     throw new Error('Invalid JSON data');
   }
+};
+
+
+
+export const createErrorPayload = (data: IncomingUser, errorText: string) => {
+  return JSON.stringify({
+    ...data,
+    error: true,
+    errorText: "Error: " + errorText,
+  });
+};
+
+export const createSuccessPayload = (name: string, index: number) => {
+  return JSON.stringify({
+    name: name,
+    index: index,
+    error: false,
+    errorText: "",
+  });
 };

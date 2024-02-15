@@ -11,6 +11,7 @@ export enum CommandGame {
   RandomAttack = 'randomAttack',
   Turn = 'turn',
   Finish = 'finish',
+  SinglePlay = 'single_play',
 }
 
 export interface IncomingData {
@@ -23,10 +24,11 @@ export interface IncomingUser {
   name: string;
   password: string;
 }
-
-export interface ResponseUser {
+interface ResponseUserInfo {
   name: string;
   index: number;
+}
+export interface ResponseUser extends ResponseUserInfo {
   error: boolean;
   errorText: string;
 }
@@ -36,3 +38,9 @@ export interface User {
   password: string;
   index: number;
 }
+
+export interface RoomGame {
+  roomId: number;
+  roomUsers: ResponseUserInfo[];
+}
+
