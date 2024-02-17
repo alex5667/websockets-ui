@@ -179,7 +179,7 @@ export class RoomsController {
   private checkUserGame() {
     const gamesArray = Array.from(games.values());
     const checkRoom = gamesArray.find((room) => {
-      return room.players.some((user) => this.ws.id === user.idPlayer);
+      return room.players.some((user) => this.ws.id === user.idUser);
     });
     if (checkRoom) {
       return true;

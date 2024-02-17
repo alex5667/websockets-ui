@@ -134,7 +134,6 @@ export class GameController {
               user.indexSocket,
               currentGame.players[attackInfo.indexPlayer].idPlayer
             );
-            //this.sendTurn(user.indexSocket, currentGame.players[attackInfo.indexPlayer].idPlayer);
           });
         }
       }
@@ -161,6 +160,50 @@ export class GameController {
     }
   }
 
+  isPlayerExit(indexSocket: number) {
+    const arrayFromGames = Array.from(games.values());
+    const currentGame = arrayFromGames.find((game) =>
+      game.players.some((player) => player.indexSocket === indexSocket),
+    );
+
+    if (currentGame) {
+      const indexExitPlayer = currentGame.players.findIndex((player) => player.indexSocket === indexSocket);
+
+      if (indexExitPlayer !== -1) {
+        this.updateWinners(currentGame.idGame, currentGame.players[1 - indexExitPlayer].idUser);
+
+        this.sendFinishGame(
+          currentGame.players[1 - indexExitPlayer].indexSocket,
+          currentGame.players[1 - indexExitPlayer].idPlayer,
+        );
+      }
+    }
+  }
+
+  private updateWinners(idGame: number, idUser: number) {
+    const nameUser = userDB[idUser].name;
+
+    const checkWinners = winners.find((winner) => winner.name === nameUser);
+    if (checkWinners) {
+      checkWinners.wins += 1;
+    }
+    if (!checkWinners) {
+      winners.push({ name: nameUser, wins: 1 });
+    }
+    wsClients.forEach((client) => {
+      client.send(
+        JSON.stringify({
+          type: CommandGame.UpdateWin,
+          data: JSON.stringify(winners),
+          id: 0,
+        }),
+      );
+    });
+    games.delete(idGame);
+  }
+
+
+
   private finishGame(numberShot: number, idUser: number, idGame: number) {
     const isWin = this.gameService.checkWin(numberShot);
 
@@ -169,25 +212,7 @@ export class GameController {
     }
 
     if (isWin) {
-      const nameUser = userDB[idUser].name;
-
-      const checkWinners = winners.find((winner) => winner.name === nameUser);
-      if (checkWinners) {
-        checkWinners.wins += 1;
-      }
-      if (!checkWinners) {
-        winners.push({ name: nameUser, wins: 1 });
-      }
-      wsClients.forEach((client) => {
-        client.send(
-          JSON.stringify({
-            type: CommandGame.UpdateWin,
-            data: JSON.stringify(winners),
-            id: 0,
-          })
-        );
-      });
-      games.delete(idGame);
+      this.updateWinners(idGame, idUser);
     }
     return true;
   }
