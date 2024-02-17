@@ -1,6 +1,6 @@
 import { WebSocket } from 'ws';
 
-export default interface WebSocketEx extends WebSocket {
+export default interface WebSocketWithIds extends WebSocket {
   id?: number;
   indexSocket?: number;
 }

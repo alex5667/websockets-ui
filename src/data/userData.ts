@@ -1,8 +1,8 @@
 import { User, GameInfo } from '../types/types.ts';
-import WebSocketEx from '../types/websocketEx.ts';
+import WebSocketWithIds from '../types/WebSocketWithIds.ts';
 
 
 
 export const userDB: User[] = [];
 
-export const wsClients = new Set<WebSocketEx>();
+export const wsClients = new Set<WebSocketWithIds>();

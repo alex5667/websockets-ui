@@ -2,11 +2,11 @@ import { IncomingUser } from "../types/types.ts";
 import { userDB, wsClients } from "../data/userData.ts";
 import { CommandGame } from "../types/types.ts";
 import { createErrorPayload, createSuccessPayload } from "../utils/utils.ts";
-import WebSocketEx from "../types/websocketEx.ts";
+import WebSocketWithIds from "../types/WebSocketWithIds.ts";
 
 let indexSocket = 0;
 
-export const registerUsers = (ws: WebSocketEx, data: IncomingUser) => {
+export const registerUsers = (ws: WebSocketWithIds, data: IncomingUser) => {
   const { name, password } = data;
 
   const res = {
