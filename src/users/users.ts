@@ -1,11 +1,10 @@
 import { IncomingUser } from "../types/types.ts";
-import WebSocket from "ws";
-import { userDB } from "./userDB.ts";
+import { userDB, wsClients } from "../data/userData.ts";
 import { CommandGame } from "../types/types.ts";
 import { createErrorPayload, createSuccessPayload } from "../utils/utils.ts";
 import WebSocketEx from "../types/websocketEx.ts";
 
-export const wsClients = new Set<WebSocketEx>();
+let indexSocket = 0;
 
 export const registerUsers = (ws: WebSocketEx, data: IncomingUser) => {
   const { name, password } = data;
@@ -19,21 +18,27 @@ export const registerUsers = (ws: WebSocketEx, data: IncomingUser) => {
 
   if (!name || !password) {
     res.data = createErrorPayload(data, "Name or password is missing");
-  } else  if (findUser && findUser.password !== password) {
-      res.data = createErrorPayload(data, "Wrong password");
-    } else  if(findUser && findUser.password === password){
-      res.data = createSuccessPayload(name, findUser.index);
-      ws.id = findUser.index;
-      wsClients.add(ws);
-    }    
-    else {
-      const newUser = addUser(name, password);
-      res.data = createSuccessPayload(name, newUser.index);
-      ws.id = newUser.index;
-      wsClients.add(ws);
-    }
-  
+  } else if (findUser && findUser.password !== password) {
+    res.data = createErrorPayload(data, "Wrong password");
+  } else if (findUser && findUser.password === password) {
+    res.data = createSuccessPayload(name, findUser.index);
+    ws.id = findUser.index;
+    ws.indexSocket = indexSocket;
+    indexSocket++;
+    wsClients.add(ws);
 
+  } else {
+    const newUser = addUser(name, password);
+    res.data = createSuccessPayload(name, newUser.index);
+    ws.id = newUser.index;
+    ws.indexSocket = indexSocket;
+    indexSocket++;
+    wsClients.add(ws);
+
+  }
+
+  console.log("res", res);
+  console.log("wsClients", wsClients.size);
   ws.send(JSON.stringify(res));
   console.log("Send message to client: ", JSON.stringify(res));
 };
