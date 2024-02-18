@@ -62,6 +62,14 @@ export class WSController {
       case CommandGame.RundomAttack:
         this.gameController.getRandomAttack(this.data as RandomAttack);
         break;
+      case CommandGame.SinglePlay:
+        this.roomsController.createGameWithBot();
+        this.roomsController.updateCurrentRoom();
+        break;
+
+      default:
+        console.error("Invalid message type");
+        break;
     }
   }
 }

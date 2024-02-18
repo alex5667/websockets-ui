@@ -2,7 +2,6 @@ import WebSocketWithIds from "../types/WebSocketWithIds.ts";
 import { GameService } from "./gameService.ts";
 import { games, winners } from "../data/gameData.ts";
 import { wsClients } from "../data/userData.ts";
-import { CommandGame } from "../types/types.ts";
 import {
   AttackUser,
   RandomAttack,
@@ -12,6 +11,8 @@ import {
   StartGameData,
   WinnerId,
   StatusAttack,
+  GameInfo,
+  CommandGame,
 } from "../types/types.ts";
 import { userDB } from "../data/userData.ts";
 export class GameController {
@@ -27,18 +28,15 @@ export class GameController {
     console.log("data startgame", data);
     const currentGame = games.get(data.gameId);
 
-    const userGameArray = this.gameService.addShips(data);
+    const userGameArray = this.gameService.addShips(data.ships);
     const findUser = currentGame?.players[data.indexPlayer];
 
     console.log("findUser gamecontroller", findUser);
     if (findUser && currentGame) {
       findUser.shipInfo = userGameArray;
 
-      if (
-        currentGame?.players[0].shipInfo.length !== 0 &&
-        currentGame?.players[1].shipInfo.length !== 0
-      ) {
-        currentGame?.players.forEach((user) => {
+      if (currentGame.players.every((player) => player.shipInfo.length !== 0)) {
+        currentGame.players.forEach((user) => {
           this.sendMessage(user.idPlayer, user.indexSocket, user.shipsCoord);
           this.sendTurn(user.indexSocket, currentGame.players[0].idPlayer);
         });
@@ -67,6 +65,7 @@ export class GameController {
         });
         currentGame.players[attackInfo.indexPlayer].isPlayerTurn = false;
         currentGame.players[1 - attackInfo.indexPlayer].isPlayerTurn = true;
+        this.getBotAttack(currentGame, attackInfo.indexPlayer === 0);
       }
 
       if (typeof result === "number") {
@@ -83,6 +82,7 @@ export class GameController {
         });
         currentGame.players[attackInfo.indexPlayer].isPlayerTurn = false;
         currentGame.players[1 - attackInfo.indexPlayer].isPlayerTurn = true;
+        this.getBotAttack(currentGame, attackInfo.indexPlayer === 0);
       }
       if (result === StatusAttack.Shot) {
         currentGame?.players.forEach((user) => {
@@ -93,6 +93,7 @@ export class GameController {
           );
         });
         currentGame.players[attackInfo.indexPlayer].checkWin += 1;
+        this.getBotAttack(currentGame, attackInfo.indexPlayer === 1);
       }
 
       if (result === StatusAttack.Killed) {
@@ -104,7 +105,7 @@ export class GameController {
           );
         });
 
-        const coord = this.gameService.markSurroundingCells (
+        const coord = this.gameService.markSurroundingCells(
           currentGame?.players[1 - attackInfo.indexPlayer].shipInfo,
           attackInfo.x,
           attackInfo.y
@@ -136,7 +137,18 @@ export class GameController {
             );
           });
         }
+        this.getBotAttack(currentGame, attackInfo.indexPlayer === 1);
       }
+    }
+  }
+
+  private getBotAttack(currentGame: GameInfo, isIndex: boolean) {
+    if (currentGame.isBot && isIndex) {
+      const randomAttack: RandomAttack = {
+        gameId: currentGame.idGame,
+        indexPlayer: 1,
+      };
+      setTimeout(() => this.getRandomAttack(randomAttack), 1000);
     }
   }
 
@@ -145,7 +157,7 @@ export class GameController {
 
     if (currentGame) {
       const randomCoord = this.gameService.getRandomCoordinate(
-        currentGame.players[randomAttackInfo.indexPlayer].shipInfo
+        currentGame.players[1 - randomAttackInfo.indexPlayer].shipInfo
       );
       if (randomCoord) {
         const attackInfo: AttackUser = {
@@ -163,25 +175,37 @@ export class GameController {
   isPlayerExit(indexSocket: number) {
     const arrayFromGames = Array.from(games.values());
     const currentGame = arrayFromGames.find((game) =>
-      game.players.some((player) => player.indexSocket === indexSocket),
+      game.players.some((player) => player.indexSocket === indexSocket)
     );
 
     if (currentGame) {
-      const indexExitPlayer = currentGame.players.findIndex((player) => player.indexSocket === indexSocket);
+      const indexExitPlayer = currentGame.players.findIndex(
+        (player) => player.indexSocket === indexSocket
+      );
 
       if (indexExitPlayer !== -1) {
-        this.updateWinners(currentGame.idGame, currentGame.players[1 - indexExitPlayer].idUser);
+        this.updateWinners(
+          currentGame.idGame,
+          currentGame.players[1 - indexExitPlayer].idUser
+        );
 
         this.sendFinishGame(
           currentGame.players[1 - indexExitPlayer].indexSocket,
-          currentGame.players[1 - indexExitPlayer].idPlayer,
+          currentGame.players[1 - indexExitPlayer].idPlayer
         );
       }
     }
   }
 
   private updateWinners(idGame: number, idUser: number) {
-    const nameUser = userDB[idUser].name;
+    const checkDb = userDB[idUser];
+    let nameUser: string;
+
+    if (!checkDb) {
+      nameUser = "Bot";
+    } else {
+      nameUser = checkDb.name;
+    }
 
     const checkWinners = winners.find((winner) => winner.name === nameUser);
     if (checkWinners) {
@@ -196,13 +220,11 @@ export class GameController {
           type: CommandGame.UpdateWin,
           data: JSON.stringify(winners),
           id: 0,
-        }),
+        })
       );
     });
     games.delete(idGame);
   }
-
-
 
   private finishGame(numberShot: number, idUser: number, idGame: number) {
     const isWin = this.gameService.checkWin(numberShot);

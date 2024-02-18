@@ -16,7 +16,7 @@ export const registerUsers = (ws: WebSocketWithIds, data: IncomingUser) => {
   };
   const findUser = userDB.find((user) => user.name === name);
 
-  if (!name || !password) {
+  if (!name || !password|| name.length < 5 || password.length < 5) {
     res.data = createErrorPayload(data, "Name or password is missing");
   } else if (findUser && findUser.password !== password) {
     res.data = createErrorPayload(data, "Wrong password");

@@ -1,11 +1,14 @@
-import { StatusAttack, UserShips, Coordinate,ShipsCoord } from "../types/types.ts";
+import {
+  StatusAttack,
+  UserShips,
+  Coordinate,
+  ShipsCoord,
+} from "../types/types.ts";
 
 export class GameService {
-  addShips(ships: UserShips) : number[][] {
-    const board: number[][] = Array(10)
-      .fill(0)
-      .map(() => Array(10).fill(0));
-    for (const ship of ships.ships) {
+  addShips(ships: ShipsCoord[]): number[][] {
+    const board: number[][] = this.createEmptyBoard();
+    for (const ship of ships) {
       const x = ship.position.x;
       const y = ship.position.y;
 
@@ -15,11 +18,24 @@ export class GameService {
         const dx = direction ? 0 : i;
         const dy = direction ? i : 0;
 
-        board[y + dy][x + dx] =this.getShipValue(ship.type);
+        board[y + dy][x + dx] = this.getShipValue(ship.type);
       }
     }
     return board;
-  } 
+  }
+
+  private createEmptyBoard(): number[][] {
+    const board: number[][] = [];
+    for (let i = 0; i < 10; i++) {
+      const row: number[] = [];
+      for (let j = 0; j < 10; j++) {
+        row.push(0);
+      }
+      board.push(row);
+    }
+    return board;
+  }
+
   private getShipValue(type: string): number {
     switch (type) {
       case "small":
@@ -63,48 +79,48 @@ export class GameService {
     let count = 1;
 
     for (let dx = -1; x + dx >= 0; dx--) {
-      const neighbor = board[y][x + dx];
-      if (neighbor === -value) {
+      const cellValue  = board[y][x + dx];
+      if (cellValue  === -value) {
         count++;
       }
 
-      if (neighbor === 0 || neighbor === -5) {
+      if (cellValue  === 0 || cellValue  === -5) {
         break;
       }
     }
 
     for (let dx = 1; x + dx < board.length; dx++) {
-      const neighbor = board[y][x + dx];
+      const cellValue  = board[y][x + dx];
 
-      if (neighbor === -value) {
+      if (cellValue  === -value) {
         count++;
       }
 
-      if (neighbor === 0 || neighbor === -5) {
+      if (cellValue  === 0 || cellValue  === -5) {
         break;
       }
     }
 
     for (let dy = -1; y + dy >= 0; dy--) {
-      const neighbor = board[y + dy][x];
+      const cellValue  = board[y + dy][x];
 
-      if (neighbor === -value) {
+      if (cellValue  === -value) {
         count++;
       }
 
-      if (neighbor === 0 || neighbor === -5) {
+      if (cellValue  === 0 || cellValue  === -5) {
         break;
       }
     }
 
     for (let dy = 1; y + dy < board.length; dy++) {
-      const neighbor = board[y + dy][x];
+      const cellValue  = board[y + dy][x];
 
-      if (neighbor === -value) {
+      if (cellValue  === -value) {
         count++;
       }
 
-      if (neighbor === 0 || neighbor === -5) {
+      if (cellValue  === 0 || cellValue  === -5) {
         break;
       }
     }
@@ -112,33 +128,21 @@ export class GameService {
     return count === value ? StatusAttack.Killed : StatusAttack.Shot;
   }
 
-  getRandomCoordinate(board: number[][]) {
-    const free = [];
+  getRandomCoordinate(board: number[][]): Coordinate | null {
+    const emptyCoordinates: Coordinate[] = [];
 
     for (let y = 0; y < 10; y++) {
       for (let x = 0; x < 10; x++) {
-        if (board[y][x] > 0) {
-          free.push({ x, y });
-        }
-
-        if (board[y][x] === 0) {
-          const random = Math.random();
-          if (random <= 0.6) {
-            free.push({ x, y });
-          }
+        if (board[y][x] > 0 || (board[y][x] === 0 && Math.random() <= 0.6)) {
+          emptyCoordinates.push({ x, y });
         }
       }
     }
 
-    if (free.length === 0) {
-      return null;
-    }
-    const index = Math.floor(Math.random() * free.length);
-    const coord = free[index];
-    return coord;
+    return emptyCoordinates.length > 0 ? emptyCoordinates[Math.floor(Math.random() * emptyCoordinates.length)] : null;
   }
 
-  markSurroundingCells (
+  markSurroundingCells(
     board: number[][],
     x: number,
     y: number,
@@ -163,7 +167,7 @@ export class GameService {
               coordinates.push({ x: newX, y: newY });
             } else if (board[newY][newX] === value) {
               coordinates.push(
-                ...this.markSurroundingCells (board, newX, newY, x, y)
+                ...this.markSurroundingCells(board, newX, newY, x, y)
               );
             }
           }
@@ -173,11 +177,7 @@ export class GameService {
     return coordinates;
   }
 
-  checkWin(wounded: number) {
-    if (wounded === 20) {
-      return true;
-    } else {
-      return false;
-    }
+  checkWin(wounded: number): boolean {
+    return wounded === 20;
   }
 }

@@ -7,15 +7,19 @@ import {
 import WebSocketWithIds from "../types/WebSocketWithIds.ts";
 import { userDB, wsClients } from "../data/userData.ts";
 import { rooms, games, winners } from "../data/gameData.ts";
+import { GameService } from '../game/gameService.ts';
+import { shipForBot } from "../data/shipForBot.ts";
 
 let roomId = 0;
 export let idGame = 0;
 
 export class RoomsController {
   ws: WebSocketWithIds;
+  gameService: GameService;
 
   constructor(ws: WebSocketWithIds) {
     this.ws = ws;
+    this.gameService = new GameService();
   }
 
   private createRoom() {
@@ -94,12 +98,56 @@ export class RoomsController {
     }
   }
 
+  createGameWithBot() {
+    if (typeof this.ws.id === 'number' && typeof this.ws.indexSocket === 'number') {
+      if (this.checkUserGame()) {
+        return;
+      }
+      const shipsBot = shipForBot[Math.floor(Math.random() * shipForBot.length)];
+      const newGame: GameInfo = {
+        idGame: idGame,
+        isBot: true,
+        players: [
+          {
+            idPlayer: 0,
+            idUser: this.ws.id,
+            indexSocket: this.ws.indexSocket,
+            shipInfo: [],
+            shipsCoord: [],
+            isPlayerTurn: true,
+            checkWin: 0,
+          },
+          {
+            idPlayer: 1,
+            idUser: -1,
+            indexSocket: -1,
+            shipInfo: this.gameService.addShips(shipsBot),
+            shipsCoord: shipsBot,
+            isPlayerTurn: false,
+            checkWin: 0,
+          },
+        ],
+      };
+
+      games.set(newGame.idGame, newGame);
+      this.deleteRoomByUserId(this.ws.id);
+      this.sendCreateGame(idGame, this.ws.id, newGame.players[0].idPlayer);
+      idGame++;
+    }
+  }
+
   private sendCreateGame(
-    idGame: number, idUser: number, idPlayer: number, indexSocket?: number
+    idGame: number,
+    idUser: number,
+    idPlayer: number,
+    indexSocket?: number
   ) {
     const wsClientsArray = Array.from(wsClients);
 
-    const findClient = idUser !== this.ws.id ? wsClientsArray.find((ws) => ws.indexSocket === indexSocket) : this.ws;
+    const findWsClient =
+      idUser !== this.ws.id
+        ? wsClientsArray.find((ws) => ws.indexSocket === indexSocket)
+        : this.ws;
 
     const sendData = {
       idGame: idGame,
@@ -111,10 +159,8 @@ export class RoomsController {
       data: JSON.stringify(sendData),
       id: 0,
     };
-    findClient?.send(JSON.stringify(res));
-    // filteredClientArray.forEach((client) => {
-    //   client.send(JSON.stringify(res));
-    // });
+    findWsClient?.send(JSON.stringify(res));
+
   }
 
   private deleteRoom(idRoom: number) {
@@ -134,6 +180,7 @@ export class RoomsController {
     }
   }
 
+  
   updateRoom() {
     const room = this.createRoom();
 
@@ -162,9 +209,7 @@ export class RoomsController {
       data: JSON.stringify(winners),
       id: 0,
     };
-    wsClients.forEach((client) => {
-      client.send(JSON.stringify(res));
-    });
+    this.sendResponseToClients(res);
   }
   private checkUserRooms() {
     const checkRoom = rooms.find((room) => {

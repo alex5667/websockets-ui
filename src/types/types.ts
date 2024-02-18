@@ -49,6 +49,7 @@ export interface RoomGame {
 
 export interface GameInfo {
   idGame: number;
+  isBot?: true;
   players: PlayerInfo[];
 }
 
