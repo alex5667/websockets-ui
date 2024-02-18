@@ -25,13 +25,11 @@ export class GameController {
   }
 
   startGame(data: UserShips) {
-    console.log("data startgame", data);
     const currentGame = games.get(data.gameId);
 
     const userGameArray = this.gameService.addShips(data.ships);
     const findUser = currentGame?.players[data.indexPlayer];
 
-    console.log("findUser gamecontroller", findUser);
     if (findUser && currentGame) {
       findUser.shipInfo = userGameArray;
 
@@ -45,7 +43,6 @@ export class GameController {
   }
 
   attackControl(attackInfo: AttackUser) {
-    console.log("attackInfo", attackInfo);
     const currentGame = games.get(attackInfo.gameId);
 
     if (currentGame?.players[attackInfo.indexPlayer].isPlayerTurn) {
@@ -303,7 +300,6 @@ export class GameController {
     ships: ShipsCoord[]
   ) {
     const findClient = this.searchSocket(indexSocket);
-    console.log("findClient", findClient);
     const sendData: StartGameData = {
       ships: ships,
       currentPlayerIndex: idPlayer,

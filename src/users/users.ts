@@ -37,8 +37,6 @@ export const registerUsers = (ws: WebSocketWithIds, data: IncomingUser) => {
 
   }
 
-  console.log("res", res);
-  console.log("wsClients", wsClients.size);
   ws.send(JSON.stringify(res));
   console.log("Send message to client: ", JSON.stringify(res));
 };
@@ -51,6 +49,5 @@ const addUser = (name: string, password: string, users = userDB) => {
   };
 
   users.push(newUser);
-  console.log("users(users)", users);
   return newUser;
 };

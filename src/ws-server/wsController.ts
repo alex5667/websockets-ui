@@ -39,32 +39,39 @@ export class WSController {
         registerUsers(this.ws, this.data as IncomingUser);
         this.roomsController.updateCurrentRoom();
         this.roomsController.updateWinners();
+        console.log("User registered");
         break;
 
       case CommandGame.CreateRoom:
         console.log("Room", this.data, this.ws.id);
         this.roomsController.updateRoom();
+        console.log("Room added");
         break;
 
       case CommandGame.AddUserToRoom:
         this.roomsController.createGame(this.data as IncomingRoom);
         this.roomsController.updateCurrentRoom();
+        console.log("Game created");
         break;
+
       case CommandGame.AddShips:
         this.gameController.startGame(this.data as UserShips);
-        console.log("game");
+        console.log("Ships added");
         break;
 
       case CommandGame.Attack:
         this.gameController.attackControl(this.data as AttackUser);
+        console.log("The attack happened");
         break;
 
       case CommandGame.RundomAttack:
         this.gameController.getRandomAttack(this.data as RandomAttack);
+        console.log("Random attack happened");
         break;
       case CommandGame.SinglePlay:
         this.roomsController.createGameWithBot();
         this.roomsController.updateCurrentRoom();
+        console.log("Single game was created");
         break;
 
       default:
