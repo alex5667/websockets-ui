@@ -1,6 +1,5 @@
 import {
   StatusAttack,
-  UserShips,
   Coordinate,
   ShipsCoord,
 } from "../types/types.ts";

@@ -6,10 +6,10 @@ import {
   UserShips,
   RandomAttack,
 } from "../types/types.ts";
-import { registerUsers } from "../users/users.ts";
+import { handleUserRegistration } from "../users/users.ts";
 import { CommandGame } from "../types/types.ts";
 import WebSocketWithIds from "../types/WebSocketWithIds.ts";
-import { RoomsController } from "../room/roomsController.ts";
+import { RoomController } from "../room/roomController.ts";
 import { GameController } from "../game/gameController.ts";
 
 export class WSController {
@@ -22,35 +22,35 @@ export class WSController {
     | RandomAttack
     | unknown;
   ws: WebSocketWithIds;
-  roomsController: RoomsController;
+  RoomController: RoomController;
   gameController: GameController;
 
   constructor(ws: WebSocketWithIds, message: IncomingData) {
     this.message = message;
     this.data = this.message.data;
     this.ws = ws;
-    this.roomsController = new RoomsController(this.ws);
+    this.RoomController = new RoomController(this.ws);
     this.gameController = new GameController(this.ws);
   }
 
   checkCommand() {
     switch (this.message.type) {
       case CommandGame.Reg:
-        registerUsers(this.ws, this.data as IncomingUser);
-        this.roomsController.updateCurrentRoom();
-        this.roomsController.updateWinners();
+        handleUserRegistration(this.ws, this.data as IncomingUser);
+        this.RoomController.updateRoom();
+        this.RoomController.updateWinners();
         console.log("User registered");
         break;
 
       case CommandGame.CreateRoom:
         console.log("Room", this.data, this.ws.id);
-        this.roomsController.updateRoom();
+        this.RoomController.updateRoom(true);
         console.log("Room added");
         break;
 
       case CommandGame.AddUserToRoom:
-        this.roomsController.createGame(this.data as IncomingRoom);
-        this.roomsController.updateCurrentRoom();
+        this.RoomController.createGame(this.data as IncomingRoom);
+        this.RoomController.updateRoom();
         console.log("Game created");
         break;
 
@@ -69,8 +69,8 @@ export class WSController {
         console.log("Random attack happened");
         break;
       case CommandGame.SinglePlay:
-        this.roomsController.createGameWithBot();
-        this.roomsController.updateCurrentRoom();
+        this.RoomController.createGameWithBot();
+        this.RoomController.updateRoom();
         console.log("Single game was created");
         break;
 
