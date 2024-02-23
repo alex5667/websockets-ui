@@ -1,18 +1,8 @@
 import WebSocketWithIds from "../types/WebSocketWithIds.ts";
 import { GameService } from "./gameService.ts";
 import { DB } from "../data/DB.ts";
-import {
-  AttackUser,
-  RandomAttack,
-  ShipsCoord,
-  UserShips,
-  AttackStatus,
-  StartGameData,
-  WinnerId,
-  StatusAttack,
-  GameInfo,
-  CommandGame,
-} from "../types/types.ts";
+import { AttackEventData, RandomAttack,UserShipsConfiguration, HitResult, GameInfo} from "../types/gameData.ts";
+import { MessageType } from "../types/messageTypes.ts";
 import { GameMessagingService } from "./gameMessagingService.ts";
 
 export class GameController {
@@ -24,7 +14,7 @@ export class GameController {
     this.gameService = new GameService();
   }
 
-  startGame(data: UserShips) {
+  startGame(data: UserShipsConfiguration) {
     const currentGame = DB.games.get(data.gameId);
     const userGameArray = this.gameService.addShips(data.ships);
     const foundUser = currentGame?.players[data.indexPlayer];
@@ -37,7 +27,7 @@ export class GameController {
           GameMessagingService.sendMessage(
             user.idPlayer,
             user.indexSocket,
-            user.shipsCoord
+            user.ShipCoordinates
           );
           GameMessagingService.sendTurn(
             user.indexSocket,
@@ -48,7 +38,7 @@ export class GameController {
     }
   }
 
-  attackControl(attackInfo: AttackUser) {
+  attackControl(attackInfo: AttackEventData) {
     const currentGame = DB.games.get(attackInfo.gameId);
 
     if (currentGame?.players[attackInfo.indexPlayer].isPlayerTurn) {
@@ -58,11 +48,11 @@ export class GameController {
         currentGame?.players[1 - attackInfo.indexPlayer].shipInfo
       );
 
-      if (result === StatusAttack.Miss) {
+      if (result === HitResult.Miss) {
         currentGame?.players.forEach((user) => {
           GameMessagingService.sendStatus(
             user.indexSocket,
-            StatusAttack.Miss,
+            HitResult.Miss,
             attackInfo
           );
           GameMessagingService.sendTurn(
@@ -76,10 +66,10 @@ export class GameController {
       }
 
       if (typeof result === "number") {
-        let status: StatusAttack;
+        let status: HitResult;
         result === -5
-          ? (status = StatusAttack.Miss)
-          : (status = StatusAttack.Shot);
+          ? (status = HitResult.Miss)
+          : (status = HitResult.Shot);
         currentGame?.players.forEach((user) => {
           GameMessagingService.sendStatus(user.indexSocket, status, attackInfo);
           GameMessagingService.sendTurn(
@@ -91,7 +81,7 @@ export class GameController {
         currentGame.players[1 - attackInfo.indexPlayer].isPlayerTurn = true;
         this.getBotAttack(currentGame, attackInfo.indexPlayer === 0);
       }
-      if (result === StatusAttack.Shot) {
+      if (result === HitResult.Shot) {
         currentGame?.players.forEach((user) => {
           GameMessagingService.sendStatus(user.indexSocket, result, attackInfo);
           GameMessagingService.sendTurn(
@@ -103,7 +93,7 @@ export class GameController {
         this.getBotAttack(currentGame, attackInfo.indexPlayer === 1);
       }
 
-      if (result === StatusAttack.Killed) {
+      if (result === HitResult.Killed) {
         currentGame?.players.forEach((user) => {
           GameMessagingService.sendStatus(user.indexSocket, result, attackInfo);
           GameMessagingService.sendTurn(
@@ -123,7 +113,7 @@ export class GameController {
             attackInfo.y = coord[i].y;
             GameMessagingService.sendStatus(
               user.indexSocket,
-              StatusAttack.Miss,
+              HitResult.Miss,
               attackInfo
             );
             GameMessagingService.sendTurn(
@@ -171,7 +161,7 @@ export class GameController {
         currentGame.players[1 - randomAttackInfo.indexPlayer].shipInfo
       );
       if (randomCoord) {
-        const attackInfo: AttackUser = {
+        const attackInfo: AttackEventData = {
           gameId: randomAttackInfo.gameId,
           x: randomCoord.x,
           y: randomCoord.y,
@@ -228,7 +218,7 @@ export class GameController {
     DB.wsClients.forEach((client) => {
       client.send(
         JSON.stringify({
-          type: CommandGame.UpdateWin,
+          type: MessageType.UpdateWin,
           data: JSON.stringify(DB.winners),
           id: 0,
         })

@@ -21,7 +21,8 @@ wss.on("connection", (ws: WebSocketWithIds) => {
 
     const result = parseData(data.toString());
     console.log("result", result);
-    new WSController(ws, result).checkCommand();
+    new WSController(ws, result).handleMessage
+();
   });
   ws.on("close", () => {
     if (ws.indexSocket !== undefined) {

@@ -1,11 +1,9 @@
-import {
-  StatusAttack,
-  Coordinate,
-  ShipsCoord,
-} from "../types/types.ts";
+
+import { ShipCoordinates, Coordinate} from "../types/shipData.ts";
+import { HitResult } from "../types/gameData.ts";
 
 export class GameService {
-  addShips(ships: ShipsCoord[]): number[][] {
+  addShips(ships: ShipCoordinates[]): number[][] {
     const board: number[][] = this.createEmptyBoard();
     for (const ship of ships) {
       const x = ship.position.x;
@@ -62,7 +60,7 @@ export class GameService {
 
     if (value === 0) {
       board[y][x] = -5;
-      return StatusAttack.Miss;
+      return HitResult.Miss;
     }
 
     if (value < 0) {
@@ -71,7 +69,7 @@ export class GameService {
 
     if (value === 1) {
       board[y][x] = -value;
-      return StatusAttack.Killed;
+      return HitResult.Killed;
     }
 
     board[y][x] = -value;
@@ -124,7 +122,7 @@ export class GameService {
       }
     }
 
-    return count === value ? StatusAttack.Killed : StatusAttack.Shot;
+    return count === value ? HitResult.Killed : HitResult.Shot;
   }
 
   getRandomCoordinate(board: number[][]): Coordinate | null {

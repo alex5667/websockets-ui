@@ -1,7 +1,8 @@
-import { IncomingUser, CommandGame, User } from "../types/types.ts";
+import { IncomingUser, User } from "../types/userData.ts";
 import { createErrorPayload, createSuccessPayload } from "../utils/utils.ts";
 import WebSocketWithIds from "../types/WebSocketWithIds.ts";
 import { DB } from "../data/DB.ts";
+import { MessageType } from "../types/messageTypes.ts";
 
 let indexSocket = 0;
 
@@ -12,7 +13,7 @@ export const handleUserRegistration = (
   const { name, password } = data;
 
   const res = {
-    type: CommandGame.Reg,
+    type: MessageType.Reg,
     data: "",
     id: 0,
   };

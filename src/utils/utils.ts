@@ -1,5 +1,4 @@
-import { IncomingUser } from "../types/types.ts";
-
+import { IncomingUser } from "../types/userData.ts";
 
 export const parseData = (data: string) => {
   try {

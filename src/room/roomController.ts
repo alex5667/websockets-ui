@@ -1,8 +1,10 @@
-import { CommandGame, IncomingRoom, GameInfo } from "../types/types.ts";
 import WebSocketWithIds from "../types/WebSocketWithIds.ts";
 import { GameService } from "../game/gameService.ts";
 import { shipForBot } from "../data/shipForBot.ts";
 import { DB } from "../data/DB.ts";
+import { MessageType } from "../types/messageTypes.ts";
+import { IncomingRoom } from "../types/roomData.ts";
+import { GameInfo } from "../types/gameData.ts";
 
 let roomId = 0;
 export let idGame = 0;
@@ -61,7 +63,7 @@ export class RoomController {
           idUser: userId!,
           indexSocket: userIndexSocket!,
           shipInfo: [],
-          shipsCoord: [],
+          ShipCoordinates: [],
           isPlayerTurn: true,
           checkWin: 0,
         },
@@ -70,7 +72,7 @@ export class RoomController {
           idUser: firstRoomUserIndex,
           indexSocket: firstRoomIndexSocket,
           shipInfo: [],
-          shipsCoord: [],
+          ShipCoordinates: [],
           isPlayerTurn: false,
           checkWin: 0,
         },
@@ -80,8 +82,10 @@ export class RoomController {
     DB.games.set(newGame.idGame, newGame);
     this.deleteRoom(data.indexRoom);
     this.deleteRoomByUserId(userId!);
-    this.sendCreateGame(idGame, userId!, newGame.players[0].idPlayer);
-    this.sendCreateGame(
+    this.broadcastGameCreation
+(idGame, userId!, newGame.players[0].idPlayer);
+    this.broadcastGameCreation
+(
       idGame,
       firstRoomUserIndex,
       newGame.players[1].idPlayer,
@@ -106,7 +110,7 @@ export class RoomController {
             idUser: this.ws.id!,
             indexSocket: this.ws.indexSocket!,
             shipInfo: [],
-            shipsCoord: [],
+            ShipCoordinates: [],
             isPlayerTurn: true,
             checkWin: 0,
           },
@@ -115,7 +119,7 @@ export class RoomController {
             idUser: -1,
             indexSocket: -1,
             shipInfo: this.gameService.addShips(shipsBot),
-            shipsCoord: shipsBot,
+            ShipCoordinates: shipsBot,
             isPlayerTurn: false,
             checkWin: 0,
           },
@@ -124,12 +128,14 @@ export class RoomController {
 
       DB.games.set(newGame.idGame, newGame);
       this.deleteRoomByUserId(this.ws.id!);
-      this.sendCreateGame(idGame, this.ws.id!, newGame.players[0].idPlayer);
+      this.broadcastGameCreation
+(idGame, this.ws.id!, newGame.players[0].idPlayer);
       idGame++;
     }
   }
 
-  private sendCreateGame(
+  private broadcastGameCreation
+(
     idGame: number,
     idUser: number,
     idPlayer: number,
@@ -144,11 +150,7 @@ export class RoomController {
 
     const sendData = { idGame, idPlayer };
 
-    const res = {
-      type: CommandGame.CreateGame,
-      data: JSON.stringify(sendData),
-      id: 0,
-    };
+    const res = this.createMessage(MessageType.CreateGame,sendData);
     findWsClient?.send(JSON.stringify(res));
   }
 
@@ -169,48 +171,19 @@ export class RoomController {
     }
   }
 
-  // updateRoom() {
-  //   const room = this.createRoom();
-
-  //   if (room) {
-  //     const res = {
-  //       type: CommandGame.UpdateRoom,
-  //       data: JSON.stringify(this.filterRoomsForUpdate()),
-  //       id: 0,
-  //     };
-  //     this.sendResponseToClients(res);
-  //   }
-  // }
-
   updateRoom(isCreateRoom: boolean = false) {
     if (isCreateRoom) {
         const room = this.createRoom();
         if (!room) return;
     }
 
-    const res = {
-        type: CommandGame.UpdateRoom,
-        data: JSON.stringify(this.filterRoomsForUpdate()),
-        id: 0,
-    };
+    const res = this.createMessage(MessageType.UpdateRoom,this.filterRoomsForUpdate())
     console.log("RoomController", res);
     this.sendResponseToClients(res);
 }
-  // updateCurrentRoom() {
-  //   const res = {
-  //     type: CommandGame.UpdateRoom,
-  //     data: JSON.stringify(this.filterRoomsForUpdate()),
-  //     id: 0,
-  //   };
-  //   console.log("RoomController", res);
-  //   this.sendResponseToClients(res);
-  // }
+
   updateWinners() {
-    const res = {
-      type: CommandGame.UpdateWin,
-      data: JSON.stringify(DB.winners),
-      id: 0,
-    };
+    const res = this.createMessage(MessageType.UpdateWin,DB.winners) ;
     this.sendResponseToClients(res);
   }
 
@@ -229,5 +202,13 @@ export class RoomController {
     DB.wsClients.forEach((client) => {
       client.send(JSON.stringify(res));
     });
+  }
+
+  private createMessage(type: MessageType, data: any) {
+    return {
+      type: type,
+      data: JSON.stringify(data),
+      id: 0,
+    };
   }
 }

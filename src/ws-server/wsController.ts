@@ -1,24 +1,20 @@
-import {
-  IncomingData,
-  AttackUser,
-  IncomingRoom,
-  IncomingUser,
-  UserShips,
-  RandomAttack,
-} from "../types/types.ts";
+import { IncomingData } from "../types/types.ts";
+import { IncomingUser } from "../types/userData.ts";
 import { handleUserRegistration } from "../users/users.ts";
-import { CommandGame } from "../types/types.ts";
+import { MessageType } from "../types/messageTypes.ts";
 import WebSocketWithIds from "../types/WebSocketWithIds.ts";
 import { RoomController } from "../room/roomController.ts";
 import { GameController } from "../game/gameController.ts";
-
+import { AttackEventData, RandomAttack } from "../types/gameData.ts";
+import { UserShipsConfiguration } from "../types/gameData.ts";
+import { IncomingRoom } from "../types/roomData.ts";
 export class WSController {
   message!: IncomingData;
   data:
     | IncomingUser
     | IncomingRoom
-    | UserShips
-    | AttackUser
+    | UserShipsConfiguration
+    | AttackEventData
     | RandomAttack
     | unknown;
   ws: WebSocketWithIds;
@@ -33,42 +29,42 @@ export class WSController {
     this.gameController = new GameController(this.ws);
   }
 
-  checkCommand() {
+  handleMessage() {
     switch (this.message.type) {
-      case CommandGame.Reg:
+      case MessageType.Reg:
         handleUserRegistration(this.ws, this.data as IncomingUser);
         this.RoomController.updateRoom();
         this.RoomController.updateWinners();
         console.log("User registered");
         break;
 
-      case CommandGame.CreateRoom:
+      case MessageType.CreateRoom:
         console.log("Room", this.data, this.ws.id);
         this.RoomController.updateRoom(true);
         console.log("Room added");
         break;
 
-      case CommandGame.AddUserToRoom:
+      case MessageType.AddUserToRoom:
         this.RoomController.createGame(this.data as IncomingRoom);
         this.RoomController.updateRoom();
         console.log("Game created");
         break;
 
-      case CommandGame.AddShips:
-        this.gameController.startGame(this.data as UserShips);
+      case MessageType.AddShips:
+        this.gameController.startGame(this.data as UserShipsConfiguration);
         console.log("Ships added");
         break;
 
-      case CommandGame.Attack:
-        this.gameController.attackControl(this.data as AttackUser);
+      case MessageType.Attack:
+        this.gameController.attackControl(this.data as AttackEventData);
         console.log("The attack happened");
         break;
 
-      case CommandGame.RundomAttack:
+      case MessageType.RundomAttack:
         this.gameController.getRandomAttack(this.data as RandomAttack);
         console.log("Random attack happened");
         break;
-      case CommandGame.SinglePlay:
+      case MessageType.SinglePlay:
         this.RoomController.createGameWithBot();
         this.RoomController.updateRoom();
         console.log("Single game was created");

@@ -1,20 +1,20 @@
 import {
-  AttackUser,
-  ShipsCoord,
-  StatusAttack,
-  StartGameData,
+  AttackEventData,
+  ShipCoordinates,
+  HitResult,
+  GameStartInfo,
   WinnerId,
-  GameInfo,
-  CommandGame,
-} from "../types/types.ts";
+} from "../types/gameData.ts";
 import { DB } from "../data/DB.ts";
+import { MessageType } from "../types/messageTypes.ts";
+ 
 
 export class GameMessagingService {
   static sendFinishGame(indexSocket: number, idPlayer: number) {
     const findWsClient = GameMessagingService.searchSocket(indexSocket);
     const winnerInfo: WinnerId = { winPlayer: idPlayer };
     const res = GameMessagingService.createMessage(
-      CommandGame.Finish,
+      MessageType.Finish,
       winnerInfo
     );
     findWsClient?.send(JSON.stringify(res));
@@ -22,12 +22,12 @@ export class GameMessagingService {
 
   static sendStatus(
     indexSocket: number,
-    status: StatusAttack,
-    attackInfo: AttackUser
+    status: HitResult,
+    attackInfo: AttackEventData
   ) {
     const findWsClient = GameMessagingService.searchSocket(indexSocket);
 
-    const attackStatus = {
+    const AttackResult = {
       position: {
         x: attackInfo.x,
         y: attackInfo.y,
@@ -37,8 +37,8 @@ export class GameMessagingService {
     };
 
     const res = GameMessagingService.createMessage(
-      CommandGame.Attack,
-      attackStatus
+      MessageType.Attack,
+      AttackResult
     );
 
     findWsClient?.send(JSON.stringify(res));
@@ -47,7 +47,7 @@ export class GameMessagingService {
   static sendTurn(indexSocket: number, idPlayer: number) {
     const findWsClient = GameMessagingService.searchSocket(indexSocket);
 
-    const res = GameMessagingService.createMessage(CommandGame.Turn, {
+    const res = GameMessagingService.createMessage(MessageType.Turn, {
       currentPlayer: idPlayer,
     });
 
@@ -57,16 +57,16 @@ export class GameMessagingService {
   static sendMessage(
     idPlayer: number,
     indexSocket: number,
-    ships: ShipsCoord[]
+    ships: ShipCoordinates[]
   ) {
     const findWsClient = GameMessagingService.searchSocket(indexSocket);
-    const sendData: StartGameData = {
+    const sendData: GameStartInfo = {
       ships: ships,
       currentPlayerIndex: idPlayer,
     };
 
     const res = GameMessagingService.createMessage(
-      CommandGame.StartGame,
+      MessageType.StartGame,
       sendData
     );
 
@@ -82,7 +82,7 @@ export class GameMessagingService {
     return findWsClient;
   }
 
-  private static createMessage(type: CommandGame, data: any) {
+  private static createMessage(type: MessageType, data: any) {
     return {
       type: type,
       data: JSON.stringify(data),
