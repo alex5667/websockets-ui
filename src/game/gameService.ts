@@ -3,7 +3,7 @@ import { ShipCoordinates, Coordinate} from "../types/shipData.ts";
 import { HitResult } from "../types/gameData.ts";
 
 export class GameService {
-  addShips(ships: ShipCoordinates[]): number[][] {
+  placeShips(ships: ShipCoordinates[]): number[][] {
     const board: number[][] = this.createEmptyBoard();
     for (const ship of ships) {
       const x = ship.position.x;
@@ -125,7 +125,7 @@ export class GameService {
     return count === value ? HitResult.Killed : HitResult.Shot;
   }
 
-  getRandomCoordinate(board: number[][]): Coordinate | null {
+  getRandomEmptyCoordinate(board: number[][]): Coordinate | null {
     const emptyCoordinates: Coordinate[] = [];
 
     for (let y = 0; y < 10; y++) {

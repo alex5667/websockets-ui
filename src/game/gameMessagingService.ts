@@ -10,7 +10,8 @@ import { MessageType } from "../types/messageTypes.ts";
  
 
 export class GameMessagingService {
-  static sendFinishGame(indexSocket: number, idPlayer: number) {
+  static sendhandleGameFinish
+(indexSocket: number, idPlayer: number) {
     const findWsClient = GameMessagingService.searchSocket(indexSocket);
     const winnerInfo: WinnerId = { winPlayer: idPlayer };
     const res = GameMessagingService.createMessage(
@@ -66,7 +67,7 @@ export class GameMessagingService {
     };
 
     const res = GameMessagingService.createMessage(
-      MessageType.StartGame,
+      MessageType.initializeGame,
       sendData
     );
 

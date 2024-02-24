@@ -21,53 +21,43 @@ export class WSController {
   RoomController: RoomController;
   gameController: GameController;
 
-  constructor(ws: WebSocketWithIds, message: IncomingData) {
-    this.message = message;
-    this.data = this.message.data;
+  constructor(ws: WebSocketWithIds,) {
     this.ws = ws;
     this.RoomController = new RoomController(this.ws);
     this.gameController = new GameController(this.ws);
   }
 
-  handleMessage() {
-    switch (this.message.type) {
+  handleMessage( message: IncomingData) {
+    switch (message.type) {
       case MessageType.Reg:
-        handleUserRegistration(this.ws, this.data as IncomingUser);
+        handleUserRegistration(this.ws, message.data as IncomingUser);
         this.RoomController.updateRoom();
-        this.RoomController.updateWinners();
-        console.log("User registered");
+        this.RoomController.handleWinnerUpdate();
         break;
 
       case MessageType.CreateRoom:
-        console.log("Room", this.data, this.ws.id);
         this.RoomController.updateRoom(true);
-        console.log("Room added");
         break;
 
       case MessageType.AddUserToRoom:
-        this.RoomController.createGame(this.data as IncomingRoom);
+        this.RoomController.createGame(message.data as IncomingRoom);
         this.RoomController.updateRoom();
-        console.log("Game created");
         break;
 
-      case MessageType.AddShips:
-        this.gameController.startGame(this.data as UserShipsConfiguration);
-        console.log("Ships added");
+      case MessageType.placeShips:
+        this.gameController.initializeGame(message.data as UserShipsConfiguration);
         break;
 
       case MessageType.Attack:
-        this.gameController.attackControl(this.data as AttackEventData);
-        console.log("The attack happened");
+        this.gameController.handleAttack(message.data as AttackEventData);
         break;
 
-      case MessageType.RundomAttack:
-        this.gameController.getRandomAttack(this.data as RandomAttack);
-        console.log("Random attack happened");
+      case MessageType.RandomAttack:
+        this.gameController.initiateRandomAttack(message.data as RandomAttack);
         break;
       case MessageType.SinglePlay:
         this.RoomController.createGameWithBot();
         this.RoomController.updateRoom();
-        console.log("Single game was created");
         break;
 
       default:

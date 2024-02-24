@@ -1,7 +1,13 @@
 import WebSocketWithIds from "../types/WebSocketWithIds.ts";
 import { GameService } from "./gameService.ts";
 import { DB } from "../data/DB.ts";
-import { AttackEventData, RandomAttack,UserShipsConfiguration, HitResult, GameInfo} from "../types/gameData.ts";
+import {
+  AttackEventData,
+  RandomAttack,
+  UserShipsConfiguration,
+  HitResult,
+  GameInfo,
+} from "../types/gameData.ts";
 import { MessageType } from "../types/messageTypes.ts";
 import { GameMessagingService } from "./gameMessagingService.ts";
 
@@ -14,16 +20,16 @@ export class GameController {
     this.gameService = new GameService();
   }
 
-  startGame(data: UserShipsConfiguration) {
-    const currentGame = DB.games.get(data.gameId);
-    const userGameArray = this.gameService.addShips(data.ships);
-    const foundUser = currentGame?.players[data.indexPlayer];
+  initializeGame(data: UserShipsConfiguration) {
+    const activeGame = DB.games.get(data.gameId);
+    const userGameArray = this.gameService.placeShips(data.ships);
+    const foundUser = activeGame?.players[data.indexPlayer];
 
-    if (foundUser && currentGame) {
+    if (foundUser && activeGame) {
       foundUser.shipInfo = userGameArray;
 
-      if (currentGame.players.every((player) => player.shipInfo.length !== 0)) {
-        currentGame.players.forEach((user) => {
+      if (activeGame.players.every((player) => player.shipInfo.length !== 0)) {
+        activeGame.players.forEach((user) => {
           GameMessagingService.sendMessage(
             user.idPlayer,
             user.indexSocket,
@@ -31,25 +37,25 @@ export class GameController {
           );
           GameMessagingService.sendTurn(
             user.indexSocket,
-            currentGame.players[0].idPlayer
+            activeGame.players[0].idPlayer
           );
         });
       }
     }
   }
 
-  attackControl(attackInfo: AttackEventData) {
-    const currentGame = DB.games.get(attackInfo.gameId);
+  handleAttack(attackInfo: AttackEventData) {
+    const activeGame = DB.games.get(attackInfo.gameId);
 
-    if (currentGame?.players[attackInfo.indexPlayer].isPlayerTurn) {
+    if (activeGame?.players[attackInfo.indexPlayer].isPlayerTurn) {
       const result = this.gameService.attack(
         attackInfo.x,
         attackInfo.y,
-        currentGame?.players[1 - attackInfo.indexPlayer].shipInfo
+        activeGame?.players[1 - attackInfo.indexPlayer].shipInfo
       );
 
       if (result === HitResult.Miss) {
-        currentGame?.players.forEach((user) => {
+        activeGame?.players.forEach((user) => {
           GameMessagingService.sendStatus(
             user.indexSocket,
             HitResult.Miss,
@@ -57,57 +63,55 @@ export class GameController {
           );
           GameMessagingService.sendTurn(
             user.indexSocket,
-            currentGame.players[1 - attackInfo.indexPlayer].idPlayer
+            activeGame.players[1 - attackInfo.indexPlayer].idPlayer
           );
         });
-        currentGame.players[attackInfo.indexPlayer].isPlayerTurn = false;
-        currentGame.players[1 - attackInfo.indexPlayer].isPlayerTurn = true;
-        this.getBotAttack(currentGame, attackInfo.indexPlayer === 0);
+        activeGame.players[attackInfo.indexPlayer].isPlayerTurn = false;
+        activeGame.players[1 - attackInfo.indexPlayer].isPlayerTurn = true;
+        this.initiateBotAttack(activeGame, attackInfo.indexPlayer === 0);
       }
 
       if (typeof result === "number") {
         let status: HitResult;
-        result === -5
-          ? (status = HitResult.Miss)
-          : (status = HitResult.Shot);
-        currentGame?.players.forEach((user) => {
+        result === -5 ? (status = HitResult.Miss) : (status = HitResult.Shot);
+        activeGame?.players.forEach((user) => {
           GameMessagingService.sendStatus(user.indexSocket, status, attackInfo);
           GameMessagingService.sendTurn(
             user.indexSocket,
-            currentGame.players[1 - attackInfo.indexPlayer].idPlayer
+            activeGame.players[1 - attackInfo.indexPlayer].idPlayer
           );
         });
-        currentGame.players[attackInfo.indexPlayer].isPlayerTurn = false;
-        currentGame.players[1 - attackInfo.indexPlayer].isPlayerTurn = true;
-        this.getBotAttack(currentGame, attackInfo.indexPlayer === 0);
+        activeGame.players[attackInfo.indexPlayer].isPlayerTurn = false;
+        activeGame.players[1 - attackInfo.indexPlayer].isPlayerTurn = true;
+        this.initiateBotAttack(activeGame, attackInfo.indexPlayer === 0);
       }
       if (result === HitResult.Shot) {
-        currentGame?.players.forEach((user) => {
+        activeGame?.players.forEach((user) => {
           GameMessagingService.sendStatus(user.indexSocket, result, attackInfo);
           GameMessagingService.sendTurn(
             user.indexSocket,
-            currentGame.players[attackInfo.indexPlayer].idPlayer
+            activeGame.players[attackInfo.indexPlayer].idPlayer
           );
         });
-        currentGame.players[attackInfo.indexPlayer].checkWin += 1;
-        this.getBotAttack(currentGame, attackInfo.indexPlayer === 1);
+        activeGame.players[attackInfo.indexPlayer].checkWin += 1;
+        this.initiateBotAttack(activeGame, attackInfo.indexPlayer === 1);
       }
 
       if (result === HitResult.Killed) {
-        currentGame?.players.forEach((user) => {
+        activeGame?.players.forEach((user) => {
           GameMessagingService.sendStatus(user.indexSocket, result, attackInfo);
           GameMessagingService.sendTurn(
             user.indexSocket,
-            currentGame.players[attackInfo.indexPlayer].idPlayer
+            activeGame.players[attackInfo.indexPlayer].idPlayer
           );
         });
 
         const coord = this.gameService.markSurroundingCells(
-          currentGame?.players[1 - attackInfo.indexPlayer].shipInfo,
+          activeGame?.players[1 - attackInfo.indexPlayer].shipInfo,
           attackInfo.x,
           attackInfo.y
         );
-        currentGame?.players.forEach((user) => {
+        activeGame?.players.forEach((user) => {
           for (let i = 0; i < coord.length; i++) {
             attackInfo.x = coord[i].x;
             attackInfo.y = coord[i].y;
@@ -118,47 +122,49 @@ export class GameController {
             );
             GameMessagingService.sendTurn(
               user.indexSocket,
-              currentGame.players[attackInfo.indexPlayer].idPlayer
+              activeGame.players[attackInfo.indexPlayer].idPlayer
             );
           }
         });
 
-        currentGame.players[attackInfo.indexPlayer].checkWin += 1;
+        activeGame.players[attackInfo.indexPlayer].checkWin += 1;
 
-        const checkWin = this.finishGame(
-          currentGame.players[attackInfo.indexPlayer].checkWin,
-          currentGame.players[attackInfo.indexPlayer].idUser,
-          currentGame.idGame
+        const checkWin = this.handleGameFinish
+(
+          activeGame.players[attackInfo.indexPlayer].checkWin,
+          activeGame.players[attackInfo.indexPlayer].idUser,
+          activeGame.idGame
         );
         if (checkWin) {
-          currentGame?.players.forEach((user) => {
-            GameMessagingService.sendFinishGame(
+          activeGame?.players.forEach((user) => {
+            GameMessagingService.sendhandleGameFinish
+(
               user.indexSocket,
-              currentGame.players[attackInfo.indexPlayer].idPlayer
+              activeGame.players[attackInfo.indexPlayer].idPlayer
             );
           });
         }
-        this.getBotAttack(currentGame, attackInfo.indexPlayer === 1);
+        this.initiateBotAttack(activeGame, attackInfo.indexPlayer === 1);
       }
     }
   }
 
-  private getBotAttack(currentGame: GameInfo, isIndex: boolean) {
-    if (currentGame.isBot && isIndex) {
+  private initiateBotAttack(activeGame: GameInfo, isIndex: boolean) {
+    if (activeGame.isBot && isIndex) {
       const randomAttack: RandomAttack = {
-        gameId: currentGame.idGame,
+        gameId: activeGame.idGame,
         indexPlayer: 1,
       };
-      setTimeout(() => this.getRandomAttack(randomAttack), 1000);
+      setTimeout(() => this.initiateRandomAttack(randomAttack), 1000);
     }
   }
 
-  getRandomAttack(randomAttackInfo: RandomAttack) {
-    const currentGame = DB.games.get(randomAttackInfo.gameId);
+  initiateRandomAttack(randomAttackInfo: RandomAttack) {
+    const activeGame = DB.games.get(randomAttackInfo.gameId);
 
-    if (currentGame) {
-      const randomCoord = this.gameService.getRandomCoordinate(
-        currentGame.players[1 - randomAttackInfo.indexPlayer].shipInfo
+    if (activeGame) {
+      const randomCoord = this.gameService.getRandomEmptyCoordinate(
+        activeGame.players[1 - randomAttackInfo.indexPlayer].shipInfo
       );
       if (randomCoord) {
         const attackInfo: AttackEventData = {
@@ -168,37 +174,38 @@ export class GameController {
           indexPlayer: randomAttackInfo.indexPlayer,
         };
 
-        this.attackControl(attackInfo);
+        this.handleAttack(attackInfo);
       }
     }
   }
 
-  isPlayerExit(indexSocket: number) {
+  handlePlayerExit(indexSocket: number) {
     const arrayFromGames = Array.from(DB.games.values());
-    const currentGame = arrayFromGames.find((game) =>
+    const activeGame = arrayFromGames.find((game) =>
       game.players.some((player) => player.indexSocket === indexSocket)
     );
 
-    if (currentGame) {
-      const indexExitPlayer = currentGame.players.findIndex(
+    if (activeGame) {
+      const indexExitPlayer = activeGame.players.findIndex(
         (player) => player.indexSocket === indexSocket
       );
 
       if (indexExitPlayer !== -1) {
-        this.updateWinners(
-          currentGame.idGame,
-          currentGame.players[1 - indexExitPlayer].idUser
+        this.handleWinnerUpdate(
+          activeGame.idGame,
+          activeGame.players[1 - indexExitPlayer].idUser
         );
 
-        GameMessagingService.sendFinishGame(
-          currentGame.players[1 - indexExitPlayer].indexSocket,
-          currentGame.players[1 - indexExitPlayer].idPlayer
+        GameMessagingService.sendhandleGameFinish
+(
+          activeGame.players[1 - indexExitPlayer].indexSocket,
+          activeGame.players[1 - indexExitPlayer].idPlayer
         );
       }
     }
   }
 
-  private updateWinners(idGame: number, idUser: number) {
+  private handleWinnerUpdate(idGame: number, idUser: number) {
     const checkDb = DB.users[idUser];
     let nameUser: string;
 
@@ -227,7 +234,8 @@ export class GameController {
     DB.games.delete(idGame);
   }
 
-  private finishGame(numberShot: number, idUser: number, idGame: number) {
+  private handleGameFinish
+(numberShot: number, idUser: number, idGame: number) {
     const isWin = this.gameService.checkWin(numberShot);
 
     if (!isWin) {
@@ -235,7 +243,7 @@ export class GameController {
     }
 
     if (isWin) {
-      this.updateWinners(idGame, idUser);
+      this.handleWinnerUpdate(idGame, idUser);
     }
     return true;
   }

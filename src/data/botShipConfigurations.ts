@@ -1,6 +1,6 @@
 import { ShipCoordinates } from "../types/shipData.ts";
 
-export const shipForBot: ShipCoordinates[][] = [
+export const botShipConfigurations: ShipCoordinates[][] = [
   [
     {
       position: { x: 7, y: 0 },

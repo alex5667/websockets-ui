@@ -1,18 +1,16 @@
 import { IncomingUser } from "../types/userData.ts";
 
-export const parseData = (data: string) => {
+export const dataParsing = (data: string) => {
   try {
     const obj = JSON.parse(data);
-    if (obj.data && obj.data !== '') {
+    if (obj.data && obj.data !== "") {
       obj.data = JSON.parse(obj.data);
     }
     return obj;
-  } catch (e) {
-    throw new Error('Invalid JSON data');
+  } catch {
+    throw new Error("Invalid JSON data");
   }
 };
-
-
 
 export const createErrorPayload = (data: IncomingUser, errorText: string) => {
   return JSON.stringify({

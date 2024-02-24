@@ -41,7 +41,7 @@ export const handleUserRegistration = (
   console.log("Message sent to client: ", JSON.stringify(res));
 };
 
-const addUser = (name: string, password: string) => {
+const registerUser = (name: string, password: string) => {
   const newUser = {
     name: name,
     password: password,
@@ -61,7 +61,7 @@ function handleExistingUser(ws: WebSocketWithIds, user: User) {
 }
 
 function handleNewUser(ws: WebSocketWithIds, name: string, password: string) {
-  const newUser = addUser(name, password);
+  const newUser = registerUser(name, password);
   ws.id = newUser.index;
   ws.indexSocket = indexSocket;
   indexSocket++;

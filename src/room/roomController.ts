@@ -1,6 +1,6 @@
 import WebSocketWithIds from "../types/WebSocketWithIds.ts";
 import { GameService } from "../game/gameService.ts";
-import { shipForBot } from "../data/shipForBot.ts";
+import { botShipConfigurations } from "../data/botShipConfigurations.ts";
 import { DB } from "../data/DB.ts";
 import { MessageType } from "../types/messageTypes.ts";
 import { IncomingRoom } from "../types/roomData.ts";
@@ -100,7 +100,7 @@ export class RoomController {
         return;
       }
       const shipsBot =
-        shipForBot[Math.floor(Math.random() * shipForBot.length)];
+        botShipConfigurations[Math.floor(Math.random() * botShipConfigurations.length)];
       const newGame: GameInfo = {
         idGame: idGame,
         isBot: true,
@@ -118,7 +118,7 @@ export class RoomController {
             idPlayer: 1,
             idUser: -1,
             indexSocket: -1,
-            shipInfo: this.gameService.addShips(shipsBot),
+            shipInfo: this.gameService.placeShips(shipsBot),
             ShipCoordinates: shipsBot,
             isPlayerTurn: false,
             checkWin: 0,
@@ -178,11 +178,11 @@ export class RoomController {
     }
 
     const res = this.createMessage(MessageType.UpdateRoom,this.filterRoomsForUpdate())
-    console.log("RoomController", res);
     this.sendResponseToClients(res);
 }
 
-  updateWinners() {
+  handleWinnerUpdate
+() {
     const res = this.createMessage(MessageType.UpdateWin,DB.winners) ;
     this.sendResponseToClients(res);
   }
