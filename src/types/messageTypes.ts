@@ -1,0 +1,15 @@
+export enum MessageType {
+  Reg = "reg",
+  UpdateWin = "update_winners",
+  CreateRoom = "create_room",
+  AddUserToRoom = "add_user_to_room",
+  CreateGame = "create_game",
+  UpdateRoom = "update_room",
+  placeShips = "add_ships",
+  initializeGame = "start_game",
+  Attack = "attack",
+  RandomAttack = "randomAttack",
+  Turn = "turn",
+  Finish = "finish",
+  SinglePlay = "single_play",
+}

@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "ESNext",
+    "rootDir": "./",
+    "moduleResolution": "node",
+    "allowJs": true,
+    "outDir": "./dist",
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "noImplicitAny": true,
+    "skipLibCheck": true
+  },
+  "ts-node": {
+    "esm": true,
+    "experimentalSpecifierResolution": "node"
+
+  },
+  "include": ["./src/**/*.ts", "index.ts"],
+  "exclude": ["node_modules", "front"],
+  // "extends": ["eslint:recommended", "plugin:@typescript-eslint/recommended"]
+}
